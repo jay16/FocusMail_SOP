@@ -36,23 +36,23 @@ ruby 1.9.2p180 (2011-02-18 revision 30909) [i686-linux]
 
 3.更新gem
 
-[root@localhost ~]# gem update --system
-[root@localhost ~]# gem update 
-[root@localhost ~]# gem -v
+[root@localhost ruby-1.9.2-p180]# gem update --system
+[root@localhost ruby-1.9.2-p180]# gem update 
+[root@localhost ruby-1.9.2-p180]# gem -v
 2.0.3
 
 4.安装rails
 
-[root@localhost ~]# gem  install rails -v=3.2.3
-[root@localhost ~]# rails -v
+[root@localhost ruby-1.9.2-p180]# gem  install rails -v=3.2.3
+[root@localhost ruby-1.9.2-p180]# rails -v
 Rails 3.2.3
 
 5.安装数据库sqlite,mysql
 
 5.1安装sqlite
 
-[root@localhost ~]# yum -y install expat-devel gettext-devel
-[root@localhost ~]# cd /home/tools/
+[root@localhost ruby-1.9.2-p180]# yum -y install expat-devel gettext-devel
+[root@localhost ruby-1.9.2-p180]# cd /home/tools/
 [root@localhost tools]# tar xvzf sqlite-amalgamation-3.6.16.tar.gz 
 [root@localhost tools]# cd sqlite-3.6.16/
 [root@localhost sqlite-3.6.16]# ./configure --prefix=/usr
@@ -64,7 +64,7 @@ Rails 3.2.3
 安装sqlite相关套件
 
 [root@localhost sqlite-3.6.16]# gem install sqlite3-ruby
-[root@localhost sqlite-3.6.16]# gem list
+
 
 5.2安装mysql 
 
@@ -100,6 +100,7 @@ Bye
 
 6.测试 rails
 
+[root@localhost ruby-1.9.2-p180]# cd /home/tools
 [root@localhost tools]# rails new rails_app
 [root@localhost tools]# cd rails_app/
 [root@localhost rails_app]# vi Gemfile
@@ -120,6 +121,7 @@ Make sure that `gem install therubyracer -v '0.11.4'` succeeds before bundling.
 [root@localhost node-v0.4.8]# make
 [root@localhost node-v0.4.8]# make install
 [root@localhost node-v0.4.8]# gem install therubyracer
+[root@localhost node-v0.4.8]# 
 [root@localhost node-v0.4.8]# cd /home/work/focus_mail
 [root@localhost rails_app]# rm -fr Gemfile.lock
 [root@localhost rails_app]# bundle install
@@ -141,14 +143,17 @@ Make sure that `gem install therubyracer -v '0.11.4'` succeeds before bundling.
 [root@localhost tools]# mkdir /home/work
 [root@localhost tools]# cp -R focus_mail /home/work/
 [root@localhost tools]# cd /home/work/focus_mail/
+
+修改数据库配置文件
+
 [root@localhost focus_mail]# vi config/databases.yml
 (1)修改文件config/databases.yml
 
 将文件中ip 替换为localhost
 
+修改Gemfile
 [root@localhost focus_mail]# vi Gemfile
 (2)修改文件Gemfile
-修改
 gem 'lazy_high_charts', '~> 1.1.5' 修改为： gem 'lazy_high_charts'
 添加
 gem 'rb-readline'
@@ -171,10 +176,13 @@ gem nokogiri error: checking for libxml/parser.h.
 [root@localhost focus_mail]# bundle install
 
 可能问题2
-/usr/local/lib/ruby/gems/1.9.1/gems/activesupport-3.2.3/lib/active_support/dependencies.rb:251:in `require': /usr/local/lib/ruby/gems/1.9.1/gems/therubyracer-0.11.4/lib/v8/init.so: cannot restore segment prot after reloc: Permission denied
+/usr/local/lib/ruby/gems/1.9.1/gems/activesupport-3.2.3/lib/active_support/dependencies.rb:251:in `require':
+ /usr/local/lib/ruby/gems/1.9.1/gems/therubyracer-0.11.4/lib/v8/init.so: 
+cannot restore segment prot after reloc: Permission denied
 
 [root@localhost focus_mail]# vi /etc/sysconfig/selinux 
 修改为 ：SELINUX=disabled
+
 根据错误提示中的文件路径调整下面代码
 [root@localhost focus_mail]# chcon -t texrel_shlib_t /usr/local/lib/ruby/gems/1.9.1/gems/therubyracer-0.11.4/lib/v8/init.so
 [root@localhost focus_mail]# 
@@ -216,11 +224,17 @@ gem 'rb-readline'
 
 [root@localhost focus_mail]# gem install passenger
 [root@localhost focus_mail]# passenger-install-nginx-module
+
+安装过程中需要有输入提示
+
 Enter your choice (1 or 2) or press Ctrl-C to abort: 1
 Please specify a prefix directory [/opt/nginx]: 回车
 
+修改nginx配置文件
+
 [root@localhost focus_mail]# vi /opt/nginx/conf/nginx.conf
 在文件中添加如下内容，与其他server{}并行
+
     server {
         listen       80;
         server_name 192.168.0.138;(替换为平台Ip)
@@ -230,9 +244,11 @@ Please specify a prefix directory [/opt/nginx]: 回车
     }
 
 启动nginx
+
 [root@localhost focus_mail]# /opt/nginx/sbin/nginx 
 
 如修改FocusMail代码，需要重启nginx
+
 nginx重启方式1
 [root@localhost focus_mail]# /opt/nginx/sbin/nginx -s reload
 nginx重启方式2
@@ -243,13 +259,16 @@ nginx重启方式2
 
 9.安装redis
 
+[root@localhost focus_mail]# cd /home/tools
 [root@localhost tools]# tar xzvf redis-2.4.16.tar.gz 
 [root@localhost tools]# cd redis-2.4.16
 [root@localhost redis-2.4.16]# make
 [root@localhost redis-2.4.16]# make install
 [root@localhost redis-2.4.16]# cp /home/tools/redis.conf /etc
+
 启动redis
 [root@localhost redis-2.4.16]# redis-server /etc/redis.conf 
+
 查看redis是否运行
 [root@localhost redis-2.4.16]# ps -ef | grep redis
 root     14209     1  0 21:49 ?        00:00:00 redis-server /etc/redis.conf
@@ -257,7 +276,7 @@ root     14214  3375  0 21:49 pts/0    00:00:00 grep redis
 
 [root@localhost redis-2.4.16]# cd /home/work
 
-创建resque启动文件
+创建resque启动shell文件
 [root@localhost work]# vi focus_mail_start.sh
 添加如下内容
 
@@ -278,3 +297,5 @@ root     14811 14791 19 22:22 pts/0    00:00:04 /usr/local/bin/ruby /usr/local/b
 root     14815 14791 20 22:22 pts/0    00:00:04 /usr/local/bin/ruby /usr/local/bin/rake resque:work
 root     14828  3375  0 22:22 pts/0    00:00:00 grep resque
 [root@localhost work]# 
+
+
