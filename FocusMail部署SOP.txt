@@ -12,6 +12,8 @@ redis.conf                        (redis配置文件，放置/etc下)
 说明：
 1.下列操作中所有安装包都放置在/home/tools下
 2.FocusMail部署在/home/work/下
+3.FocusMail文件夹的权限为webmail:webmail;
+  resque、passenger的启动需要使用webmail用户
 3.所需安装包下载链接
   普通下载：https://codeload.github.com/jay16/FocusMail_SOP/zip/master
   git下载： https://github.com/jay16/FocusMail_SOP.git
@@ -143,6 +145,8 @@ Make sure that `gem install therubyracer -v '0.11.4'` succeeds before bundling.
 [root@localhost tools]# mkdir /home/work
 [root@localhost tools]# cp -R focus_mail /home/work/
 [root@localhost tools]# cd /home/work/focus_mail/
+修改focus_mail文件夹权限
+[root@localhost focus_mail]# chown -R webmail:webmail /home/work/focus_mail
 
 修改数据库配置文件
 
@@ -230,32 +234,89 @@ gem 'rb-readline'
 Enter your choice (1 or 2) or press Ctrl-C to abort: 1
 Please specify a prefix directory [/opt/nginx]: 回车
 
-修改nginx配置文件
 
-[root@localhost focus_mail]# vi /opt/nginx/conf/nginx.conf
-在文件中添加如下内容，与其他server{}并行
+测试passenger启动FocusMail
 
-    server {
-        listen       80;
-        server_name 192.168.0.138;(替换为平台Ip)
-        root /home/work/focus_mail/public;
-        rails_env development;
-        passenger_enabled on;
-    }
+[root@localhost focus_mail]# passenger start
 
-启动nginx
+如果出现下面信息，按提示安装即可，安装完成后会继续启动FocusMail
+Nginx core 1.2.6 isn't installed
 
-[root@localhost focus_mail]# /opt/nginx/sbin/nginx 
+Phusion Passenger Standalone will automatically install it into:
+.....
+.....
+=============== Phusion Passenger Standalone web server started ===============
+PID file: /home/work/focus_mail/tmp/pids/passenger.3000.pid
+Log file: /home/work/focus_mail/log/passenger.3000.log
+Environment: development
+Accessible via: http://0.0.0.0:3000/
 
-如修改FocusMail代码，需要重启nginx
+You can stop Phusion Passenger Standalone by pressing Ctrl-C.
+==================================================================
+ Ctrl-C 中断
 
-nginx重启方式1
-[root@localhost focus_mail]# /opt/nginx/sbin/nginx -s reload
-nginx重启方式2
-[root@localhost focus_mail]# /opt/nginx/sbin/nginx -s stop
-[root@localhost focus_mail]# /opt/nginx/sbin/nginx
 
 浏览器中输入平台ip,出现FocusMail登陆界面，表示FocusMail成功启动
+
+使用jay_li@intfocus.com/123456登陆
+
+查看log输出若有下面提示
+
+===============================================================================
+Rails Error: Unable to access log file. Please ensure that /home/work/focus_mail/log/development.log exists and is chmod 0666. 
+The log level has been raised to WARN and the output directed to STDERR until the problem is fixed
+
+==================================================================
+ Ctrl-C 中断
+
+
+修改log权限
+
+[root@localhost focus_mail]# chmod 777 log/
+
+再次启动FocusMail查看输出
+[root@localhost focus_mail]# passenger start
+
+修改FocusMail文件夹权限为webmail:webmail
+若没有webmail:webmail群组或用户
+
+添加用户webmail
+[root@localhost ~]# useradd webmail
+
+添加用户群组webmail
+[root@localhost ~]# groupadd webmail
+groupadd：webmail 组已存在
+
+向webmail群组中添加webmail用户
+[root@localhost ~]# useradd -G webmail webmail
+useradd：用户 webmail 已存在
+
+
+修改FocusMail文件夹所属群组为webmail:webmail
+[root@localhost focus_mail]# chown -R webmail:webmail /home/work/focus_mail
+
+
+passenger后台使用webmail运行FocusMail
+
+[root@localhost focus_mail]# passenger start -p 80 -d --user webmail
+=============== Phusion Passenger Standalone web server started ===============
+PID file: /home/work/focus_mail/tmp/pids/passenger.80.pid
+Log file: /home/work/focus_mail/log/passenger.80.log
+Environment: development
+Accessible via: http://0.0.0.0/
+
+Serving in the background as a daemon.
+===============================================================================
+[root@localhost focus_mail]# 
+
+查看passenger是否启动
+[root@localhost focus_mail]# passenger status -p 80
+Phusion Passenger Standalone is running on PID 4555, according to PID file /home/work/focus_mail/tmp/pids/passenger.80.pid
+[root@localhost focus_mail]# 
+
+如有需要重启passenger，需先暂停，然后再启动
+[root@localhost focus_mail]# passenger stop -p 80
+
 
 9.安装redis
 
@@ -267,9 +328,11 @@ nginx重启方式2
 [root@localhost redis-2.4.16]# cp /home/tools/redis.conf /etc
 
 启动redis
+
 [root@localhost redis-2.4.16]# redis-server /etc/redis.conf 
 
 查看redis是否运行
+
 [root@localhost redis-2.4.16]# ps -ef | grep redis
 root     14209     1  0 21:49 ?        00:00:00 redis-server /etc/redis.conf
 root     14214  3375  0 21:49 pts/0    00:00:00 grep redis
@@ -277,25 +340,39 @@ root     14214  3375  0 21:49 pts/0    00:00:00 grep redis
 [root@localhost redis-2.4.16]# cd /home/work
 
 创建resque启动shell文件
-[root@localhost work]# vi focus_mail_start.sh
+
+[root@localhost work]# vi focus_mail_resquework.sh 
+
 添加如下内容
 
 cd /home/work/focus_mail
 nohup rake resque:workers COUNT=4 QUEUE=* VERBOSE=1 &
+nohup rake resque:scheduler &
 
-赋予可执行权限
-[root@localhost work]# chmod +x focus_mail_start.sh 
-[root@localhost work]# ./focus_mail_start.sh 
+赋予权限
+
+[root@localhost work]# chmod +x focus_mail_start.sh
+[root@localhost work]# chown webmail:webmail focus_mail_resquework.sh 
+
+切换至webmail用户启动
+
+[root@localhost work]# su webmail
+[webmail@localhost work]$ 
+[webmail@localhost work]$ ./focus_mail_resquework.sh 
 nohup: appending output to “nohup.out”
-[root@localhost work]# 
+nohup: appending output to “nohup.out”
+
 查看后台是否运行
-[root@localhost work]# ps -ef | grep resque
-root     14791     1 27 22:21 pts/0    00:00:08 /usr/local/bin/ruby /usr/local/bin/rake resque:workers COUNT=4 QUEUE=* VERBOSE=1
-root     14803 14791 20 22:22 pts/0    00:00:04 /usr/local/bin/ruby /usr/local/bin/rake resque:work
-root     14809 14791 19 22:22 pts/0    00:00:04 /usr/local/bin/ruby /usr/local/bin/rake resque:work
-root     14811 14791 19 22:22 pts/0    00:00:04 /usr/local/bin/ruby /usr/local/bin/rake resque:work
-root     14815 14791 20 22:22 pts/0    00:00:04 /usr/local/bin/ruby /usr/local/bin/rake resque:work
-root     14828  3375  0 22:22 pts/0    00:00:00 grep resque
-[root@localhost work]# 
+[webmail@localhost work]$ ps -ef | grep resque
+webmail   4412     1 26 05:45 pts/1    00:00:07 /usr/local/bin/ruby /usr/local/bin/rake resque:workers COUNT=4 QUEUE=* VERBOSE=1
+webmail   4413     1 32 05:45 pts/1    00:00:09 /usr/local/bin/ruby /usr/local/bin/rake resque:scheduler
+webmail   4435  4412 18 05:45 pts/1    00:00:01 /usr/local/bin/ruby /usr/local/bin/rake resque:work
+webmail   4441  4412 17 05:45 pts/1    00:00:01 /usr/local/bin/ruby /usr/local/bin/rake resque:work
+webmail   4444  4412 15 05:45 pts/1    00:00:01 /usr/local/bin/ruby /usr/local/bin/rake resque:work
+webmail   4446  4412 15 05:45 pts/1    00:00:01 /usr/local/bin/ruby /usr/local/bin/rake resque:work
+webmail   4451  4372  0 05:46 pts/1    00:00:00 grep resque
+[webmail@localhost work]$ 
+
+主要查看进程所属用户是否是webmail.
 
 
