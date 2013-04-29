@@ -1,16 +1,20 @@
 系统环境：centos 5.5
 
 需要文件：
-sqlite-amalgamation-3.6.16.tar.gz 
-ruby-1.9.2-p180.tar.gz 
-node-v0.4.8.tar.gz 
-redis-2.4.16.tar.gz 
-focus_mail_206.tar.gz
-redis.conf
+sqlite-amalgamation-3.6.16.tar.gz (sqlite安装包）
+ruby-1.9.2-p180.tar.gz            (ruby1.9.2安装包)
+node-v0.4.8.tar.gz                (nodejs安装包)
+redis-2.4.16.tar.gz               (redis安装包)
+focus_mail.tar.gz                 (FocusMail源代码,解压后文件夹名为focus_mail_128,应修改为focus_mail)
+mail206.tar.gz                    (FocusMail数据库内容)
+redis.conf                        (redis配置文件，放置/etc下)
 
 说明：
-1.下列操作中所有安装包放置在/home/tools下
+1.下列操作中所有安装包都放置在/home/tools下
 2.FocusMail部署在/home/work/下
+3.所需安装包下载链接
+  普通下载：https://codeload.github.com/jay16/FocusMail_SOP/zip/master
+  git下载： https://github.com/jay16/FocusMail_SOP.git
 
 1. 安装gcc
 
@@ -132,7 +136,8 @@ Make sure that `gem install therubyracer -v '0.11.4'` succeeds before bundling.
 
 7.部署FocusMail
 
-[root@localhost tools]# tar xzvf focus_mail_206.tar.gz 
+[root@localhost tools]# tar xzvf focus_mail.tar.gz 
+[root@localhost tools]# mv focus_mail_128 focus_mail
 [root@localhost tools]# mkdir /home/work
 [root@localhost tools]# cp -R focus_mail /home/work/
 [root@localhost tools]# cd /home/work/focus_mail/
